@@ -1,32 +1,30 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'abhishekf5/maven-abhishek-docker-agent:v1'
+            args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket
+        }
+    }
 
     environment {
         SONAR_URL = "http://34.201.116.83:9000"
+        DOCKER_REGISTRY = "docker.io"
         DOCKER_IMAGE = "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
-        DOCKER_REGISTRY = "https://index.docker.io/v1/"
+        GIT_REPO_NAME = "java-maven-sonar-argocd-helm-k8s"
+        GIT_USER_NAME = "babu120987"
     }
 
     stages {
-
         stage('Checkout') {
             steps {
-                echo 'Checking out the code...'
                 checkout scm
             }
         }
 
         stage('Build & Test') {
             steps {
-                echo 'Building the Spring Boot project...'
                 dir('spring-boot-app') {
                     sh 'mvn clean package'
                 }
             }
         }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-                    dir('spring-boot-app') {
-                        sh "mvn sonar:sonar -Dsonar.login=$SO

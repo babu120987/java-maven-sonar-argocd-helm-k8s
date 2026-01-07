@@ -1,50 +1,31 @@
 pipeline {
     agent any
 
+    tools {
+        // This must match the Maven installation name in Manage Jenkins → Tools
+        maven 'Maven'
+    }
+
     environment {
-        MAVEN_HOME = tool 'Maven'          // Set your Maven installation name
-        DOCKER_IMAGE = 'my-app:latest'    // Docker image name
+        DOCKER_IMAGE = 'babu120987/my-app:latest' // Replace with your DockerHub username
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/babu120987/java-maven-sonar-argocd-helm-k8s', branch: 'main'
+                // Optional: Jenkins declarative checkout will automatically happen
+                echo 'Checking out code...'
             }
         }
 
         stage('Build & Test') {
             steps {
-                sh "${MAVEN_HOME}/bin/mvn clean package"
+                dir('spring-boot-app') {
+                    sh 'mvn clean package'
+                }
             }
         }
 
         stage('Sonar Analysis') {
             steps {
-                withSonarQubeEnv('MySonarQubeServer') { // Name from Jenkins Configure System
-                    sh "${MAVEN_HOME}/bin/mvn clean verify sonar:sonar"
-                }
-            }
-        }
-
-        stage('Docker Build & Push') {
-            steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
-                sh "docker push ${DOCKER_IMAGE}"
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh "kubectl apply -f k8s/deployment.yaml"
-            }
-        }
-    }
-
-    post {
-        always {
-            echo 'Cleaning workspace'
-            cleanWs()
-        }
-    }
-}

@@ -1,16 +1,23 @@
 pipeline {
-  agent any  // Use a normal Jenkins node where Docker & Maven are installed
+  agent any
   stages {
     stage('Checkout') {
-      steps { git url: '...', branch: 'main' }
+      steps { git url: 'https://github.com/babu120987/java-maven-sonar-argocd-helm-k8s.git', branch: 'main' }
     }
     stage('Build & Test') {
-      steps { sh 'mvn clean package' }
+      steps { sh 'cd spring-boot-app && mvn clean package' }
+    }
+    stage('Sonar Analysis') {
+      steps { 
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          sh 'cd spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN'
+        }
+      }
     }
     stage('Docker Build & Push') {
-      steps { 
-        sh 'docker build -t my-image:${BUILD_NUMBER} .'
-        sh 'docker push my-image:${BUILD_NUMBER}'
+      steps {
+        sh 'cd spring-boot-app && docker build -t abhishekf5/ultimate-cicd:${BUILD_NUMBER} .'
+        sh 'docker push abhishekf5/ultimate-cicd:${BUILD_NUMBER}'
       }
     }
   }

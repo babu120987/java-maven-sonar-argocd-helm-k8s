@@ -1,78 +1,17 @@
 pipeline {
-    agent {
-        docker {
-            image 'abhishekf5/maven-abhishek-docker-agent:v1'
-            args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
-        }
+  agent any  // Use a normal Jenkins node where Docker & Maven are installed
+  stages {
+    stage('Checkout') {
+      steps { git url: '...', branch: 'main' }
     }
-
-    environment {
-        SONAR_URL = "http://34.201.116.83:9000"
-        DOCKER_IMAGE = "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
+    stage('Build & Test') {
+      steps { sh 'mvn clean package' }
     }
-
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/babu120987/java-maven-sonar-argocd-helm-k8s.git'
-            }
-        }
-
-        stage('Build and Test') {
-            steps {
-                dir('spring-boot-app') {
-                    echo "Running Maven Build in: ${pwd()}"
-                    sh 'mvn clean package'
-                }
-            }
-        }
-
-        stage('Static Code Analysis') {
-            steps {
-                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-                    dir('spring-boot-app') {
-                        sh "mvn sonar:sonar -Dsonar.login=${SONAR_AUTH_TOKEN} -Dsonar.host.url=${SONAR_URL}"
-                    }
-                }
-            }
-        }
-
-        stage('Build and Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    dir('spring-boot-app') {
-                        sh "docker build -t ${DOCKER_IMAGE} ."
-                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                        sh "docker push ${DOCKER_IMAGE}"
-                    }
-                }
-            }
-        }
-
-        stage('Update Deployment File') {
-            steps {
-                withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                    dir('../') { // Go to repo root
-                        sh """
-                            git config user.email "abhishek.xyz@gmail.com"
-                            git config user.name "Abhishek Veeramalla"
-                            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" spring-boot-app-manifests/deployment.yml
-                            git add spring-boot-app-manifests/deployment.yml
-                            git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-                            git push https://${GITHUB_TOKEN}@github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git HEAD:main
-                        """
-                    }
-                }
-            }
-        }
-
+    stage('Docker Build & Push') {
+      steps { 
+        sh 'docker build -t my-image:${BUILD_NUMBER} .'
+        sh 'docker push my-image:${BUILD_NUMBER}'
+      }
     }
-
-    post {
-        always {
-            echo 'Cleaning workspace...'
-            cleanWs()
-        }
-    }
+  }
 }

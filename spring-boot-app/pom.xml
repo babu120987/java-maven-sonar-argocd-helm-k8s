@@ -17,15 +17,15 @@
         <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <spring-boot.version>3.3.0</spring-boot.version>
         <sonar-maven-plugin.version>3.10.0.4368</sonar-maven-plugin.version>
     </properties>
 
+    <!-- Parent POM must have a hardcoded version -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>${spring-boot.version}</version>
-        <relativePath/>
+        <version>3.3.0</version>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <dependencies>
@@ -58,14 +58,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <!-- Sonar Maven Plugin -->
